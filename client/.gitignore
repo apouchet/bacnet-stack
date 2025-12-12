@@ -1,0 +1,12 @@
+# Build artifacts
+build/
+*.o
+*.a
+
+# Binaries
+bin/bacnet-client
+tests/test_client
+
+# IDE
+.vscode/
+.idea/

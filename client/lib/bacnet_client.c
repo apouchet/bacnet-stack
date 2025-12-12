@@ -827,7 +827,9 @@ uint32_t bacnet_client_subscribe_cov(
     cov_data.lifetime = lifetime;
     cov_data.cancellationRequest = false;
     
-    (void)cov_increment; /* TODO: Use for COV-Property subscription */
+    /* Note: cov_increment is reserved for SubscribeCOVProperty service
+       which is not yet implemented in this client */
+    (void)cov_increment;
     
     /* Send request */
     Current_Invoke_ID = Send_COV_Subscribe(device_instance, &cov_data);
@@ -1110,7 +1112,7 @@ bacnet_client_error_t bacnet_client_reinitialize(
     
     /* Send request */
     Current_Invoke_ID = Send_Reinitialize_Device_Request(
-        device_instance, state, (char *)password);
+        device_instance, state, password);
     
     if (Current_Invoke_ID == 0) {
         return BACNET_CLIENT_ERROR_NETWORK;
@@ -1141,7 +1143,7 @@ bacnet_client_error_t bacnet_client_device_comm_control(
     
     /* Send request */
     Current_Invoke_ID = Send_Device_Communication_Control_Request(
-        device_instance, timeout_minutes, state, (char *)password);
+        device_instance, timeout_minutes, state, password);
     
     if (Current_Invoke_ID == 0) {
         return BACNET_CLIENT_ERROR_NETWORK;

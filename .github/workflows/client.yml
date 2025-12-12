@@ -9,9 +9,14 @@ on:
     branches:
       - '*'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout
@@ -63,6 +68,8 @@ jobs:
 
   build-debug:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout

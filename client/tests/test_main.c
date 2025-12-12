@@ -110,7 +110,8 @@ TEST(device_instance_validation)
 {
     /* Valid device instances: 0 to 4194302 */
     /* 4194303 is BACNET_MAX_INSTANCE (invalid/wildcard) */
-    unsigned int max_instance = 4194303;
+    /* Note: In standalone test we use the known value directly */
+    unsigned int max_instance = 4194303; /* BACNET_MAX_INSTANCE */
     
     ASSERT(0 < max_instance);
     ASSERT(100 < max_instance);

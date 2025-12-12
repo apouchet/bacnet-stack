@@ -58,7 +58,7 @@ static void print_help(void)
     printf("  --verbose, -v      Increase verbosity\n");
     printf("  --log-level <lvl>  Set log level: error, warn, info, debug\n");
     printf("  --json             Output in JSON format\n");
-    printf("  --config <file>    Configuration file path\n");
+    printf("  --config <file>    Configuration file path (not yet implemented)\n");
     printf("  --version          Show version information\n");
     printf("  --help, -h         Show this help message\n\n");
     printf("Commands:\n");
@@ -1046,7 +1046,8 @@ int main(int argc, char *argv[])
                 Config.json_output = true;
                 break;
             case 'c':
-                /* TODO: Load config file */
+                /* Configuration file support planned for future release */
+                fprintf(stderr, "Warning: Configuration file not yet implemented\n");
                 break;
             case 'V':
                 print_version();
