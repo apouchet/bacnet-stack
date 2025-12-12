@@ -1,0 +1,15 @@
+# /etc/default/bacnet-client
+# BACnet Client Service Configuration
+
+# Network interface (leave empty for auto-detect)
+BACNET_IFACE=
+
+# UDP port for BACnet/IP
+BACNET_IP_PORT=47808
+
+# BBMD configuration (optional)
+# BACNET_BBMD_ADDRESS=192.168.1.1
+# BACNET_BBMD_PORT=47808
+
+# Log level (error, warn, info, debug)
+BACNET_LOG_LEVEL=info
