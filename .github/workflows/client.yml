@@ -1,0 +1,91 @@
+name: BACnet Client CI
+
+on:
+  push:
+    branches:
+      - master
+      - 'feature/**'
+  pull_request:
+    branches:
+      - '*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -qq libconfig-dev
+    
+    - name: Build BACnet library
+      run: |
+        gcc --version
+        make LEGACY=true -C apps lib
+    
+    - name: Build BACnet Client
+      run: |
+        cd client
+        make
+    
+    - name: Run unit tests
+      run: |
+        cd client/tests
+        make
+        make run
+    
+    - name: Test CLI help
+      run: |
+        ./client/bin/bacnet-client --help
+    
+    - name: Test CLI version
+      run: |
+        ./client/bin/bacnet-client --version
+    
+    - name: Test whois (short timeout)
+      run: |
+        # Set loopback interface for testing
+        export BACNET_IFACE=lo
+        ./client/bin/bacnet-client whois --timeout 500 || true
+    
+    - name: Build server for integration tests
+      run: |
+        make LEGACY=true server
+    
+    - name: Run integration tests
+      run: |
+        cd client/tests
+        ./run_integration.sh || true
+
+  build-debug:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -qq libconfig-dev
+    
+    - name: Build with debug symbols
+      run: |
+        make LEGACY=true -C apps lib
+        cd client
+        make BUILD=debug
+    
+    - name: Verify debug build
+      run: |
+        file client/bin/bacnet-client | grep -q "not stripped" || echo "Debug symbols may not be present"

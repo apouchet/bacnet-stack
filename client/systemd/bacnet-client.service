@@ -1,0 +1,32 @@
+[Unit]
+Description=BACnet Client Service
+Documentation=https://github.com/bacnet-stack/bacnet-stack
+After=network.target
+
+[Service]
+Type=simple
+User=bacnet
+Group=bacnet
+ExecStart=/usr/local/bin/bacnet-client monitor-events --json
+Restart=on-failure
+RestartSec=5
+
+# Environment
+Environment=BACNET_IFACE=
+Environment=BACNET_IP_PORT=47808
+EnvironmentFile=-/etc/default/bacnet-client
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/bacnet
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bacnet-client
+
+[Install]
+WantedBy=multi-user.target
