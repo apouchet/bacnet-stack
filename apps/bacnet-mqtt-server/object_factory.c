@@ -172,7 +172,9 @@ bool object_factory_update_csv(uint32_t instance, const char *value)
     }
 
     if (value) {
-        CharacterString_Value_Present_Value_Set(instance, value);
+        BACNET_CHARACTER_STRING bac_value;
+        characterstring_init_ansi(&bac_value, value);
+        CharacterString_Value_Present_Value_Set(instance, &bac_value);
     }
 
     LOG_DEBUG("Updated CharacterString Value %u", instance);

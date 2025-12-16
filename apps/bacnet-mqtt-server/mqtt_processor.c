@@ -155,9 +155,8 @@ bool mqtt_processor_handle_message(
 
     LOG_DEBUG("Processing MQTT message from topic: %s", topic);
 
-    /* Parse JSON payload */
-    root = json_tokener_parse_ex(
-        json_tokener_new(), (const char *)payload, (int)payload_len);
+    /* Parse JSON payload - use json_tokener_parse for simpler usage */
+    root = json_tokener_parse((const char *)payload);
     if (!root) {
         LOG_DEBUG("Failed to parse JSON payload");
         return false;

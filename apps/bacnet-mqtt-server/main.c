@@ -132,7 +132,8 @@ static void init_service_handlers(void)
     Device_Set_Location(
         g_config.bacnet.location, strlen(g_config.bacnet.location));
     /* Note: Device_Set_Vendor_Name is declared but not implemented in bacnet-stack.
-       Vendor name is set via BACNET_VENDOR_NAME define at compile time. */
+       Vendor name is set via BACNET_VENDOR_NAME define at compile time.
+       To customize the vendor name, rebuild with: make MAKE_DEFINE=-DBACNET_VENDOR_NAME=\\\"YourVendor\\\" */
     Device_Set_Vendor_Identifier(g_config.bacnet.vendor_id);
     Device_Set_Model_Name(
         g_config.bacnet.model_name, strlen(g_config.bacnet.model_name));
