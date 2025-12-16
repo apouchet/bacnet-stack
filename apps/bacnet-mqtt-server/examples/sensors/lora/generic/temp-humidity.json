@@ -1,0 +1,13 @@
+{
+  "description": "Generic Temperature and Humidity Sensor",
+  "properties": {
+    "temperature": {
+      "type": "float",
+      "units": "degrees-celsius"
+    },
+    "humidity": {
+      "type": "float",
+      "units": "percent-relative-humidity"
+    }
+  }
+}

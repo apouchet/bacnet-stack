@@ -1,0 +1,41 @@
+# BACnet MQTT Server Configuration
+# This file configures the dynamic BACnet server fed by MQTT + JSON
+
+# MQTT broker configuration
+mqtt:
+  host: localhost
+  port: 1883
+  username: ""
+  password: ""
+  client_id: bacnet-mqtt-server
+  topic: "scada/lorawan/#"
+  keepalive: 60
+  qos: 1
+  use_tls: false
+  ca_cert: ""
+  client_cert: ""
+  client_key: ""
+
+# BACnet configuration
+bacnet:
+  device_instance: 260001
+  udp_port: 47808
+  network_interface: ""
+  device_name: "BACnet-MQTT-Server"
+  vendor_name: "BACnet MQTT Gateway"
+  vendor_id: 0
+  model_name: "MQTT-Server"
+  app_version: "1.0.0"
+  description: "Dynamic BACnet server fed by MQTT + JSON"
+  location: ""
+
+# File paths for sensor configuration
+paths:
+  sensors_map: "/var/config/scada/sensors_map.json"
+  sensors_base: "/var/config/scada/sensors"
+
+# Logging configuration
+logging:
+  level: info    # debug, info, warning, error
+  json_output: false
+  log_file: ""   # Empty means stdout

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "70-b3-d5-40-f7-5b-24-c2",
+    "sensor": "nexelec/X565LS",
+    "src": "lora"
+  },
+  {
+    "id": "a8-40-41-00-01-82-34-56",
+    "sensor": "generic/temp-humidity",
+    "src": "lora"
+  }
+]
