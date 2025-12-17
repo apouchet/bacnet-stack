@@ -264,9 +264,9 @@ SUBDIRS = lib readprop writeprop readfile writefile reinit server dcc \
 	who-am-i you-are apdu writegroup \
 	delete-object server-discover server-basic server-mini
 
-# bacnet-mqtt-server is only available on Linux
+# bacnet-mqtt-server and lorawan-decoder are only available on Linux
 ifeq (${BACNET_PORT},linux)
-SUBDIRS += bacnet-mqtt-server
+SUBDIRS += bacnet-mqtt-server lorawan-decoder
 endif
 
 ifneq (,$(filter $(BACDL),bip all))
@@ -551,4 +551,8 @@ gtk-discover: $(BACNET_LIB_TARGET)
 
 .PHONY: bacnet-mqtt-server
 bacnet-mqtt-server: $(BACNET_LIB_TARGET)
+	$(MAKE) -B -C $@
+
+.PHONY: lorawan-decoder
+lorawan-decoder:
 	$(MAKE) -B -C $@
