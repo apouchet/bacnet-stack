@@ -118,19 +118,23 @@ static void periodic_tasks(void)
     }
 }
 
+/* MQTT connection timeout in seconds */
+#define MQTT_CONNECTION_TIMEOUT 10
+
 /**
  * @brief Wait for MQTT connection with timeout
  */
 static bool wait_for_mqtt_connection(int timeout_seconds)
 {
-    int elapsed = 0;
+    int elapsed_100ms = 0;
+    int timeout_100ms = timeout_seconds * 10; /* Convert to 100ms intervals */
 
-    while (!mqtt_handler_is_connected() && elapsed < timeout_seconds) {
+    while (!mqtt_handler_is_connected() && elapsed_100ms < timeout_100ms) {
         usleep(100000); /* 100ms */
-        elapsed++;
-        if (elapsed % 10 == 0) {
-            LOG_INFO("Waiting for MQTT connection... (%d/%d)", 
-                    elapsed / 10, timeout_seconds);
+        elapsed_100ms++;
+        if (elapsed_100ms % 10 == 0) {
+            LOG_INFO("Waiting for MQTT connection... (%d/%d s)", 
+                    elapsed_100ms / 10, timeout_seconds);
         }
     }
 
@@ -234,7 +238,7 @@ int main(int argc, char *argv[])
     }
 
     /* Wait for connection */
-    if (!wait_for_mqtt_connection(100)) {
+    if (!wait_for_mqtt_connection(MQTT_CONNECTION_TIMEOUT)) {
         LOG_ERROR("MQTT connection timeout");
         goto cleanup;
     }

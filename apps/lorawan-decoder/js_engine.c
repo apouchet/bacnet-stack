@@ -228,6 +228,17 @@ bool js_decode_uplink(
 }
 
 /**
+ * @brief Safe JSON decode wrapper for duk_safe_call
+ */
+static duk_ret_t safe_json_decode(duk_context *duk_ctx, void *udata)
+{
+    (void)udata;
+    /* Stack: [ string ] -> [ decoded_object ] */
+    duk_json_decode(duk_ctx, -1);
+    return 1; /* One return value */
+}
+
+/**
  * @brief Call the encodeDownlink function
  */
 bool js_encode_downlink(
@@ -272,9 +283,16 @@ bool js_encode_downlink(
         return false;
     }
 
-    /* Parse JSON and push as argument */
+    /* Parse JSON safely */
     duk_push_string(duk_ctx, json_data);
-    duk_json_decode(duk_ctx, -1);
+    if (duk_safe_call(duk_ctx, safe_json_decode, NULL, 1, 1) != 0) {
+        const char *err = duk_safe_to_string(duk_ctx, -1);
+        snprintf(result->error_msg, sizeof(result->error_msg),
+                "JSON parse error: %s", err ? err : "unknown");
+        duk_pop(duk_ctx); /* Pop error */
+        duk_pop(duk_ctx); /* Pop function */
+        return false;
+    }
 
     /* Call the function */
     if (duk_pcall(duk_ctx, 1) != 0) {

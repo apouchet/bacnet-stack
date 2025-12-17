@@ -102,6 +102,7 @@ apps/**/*
 !apps/**/*.h
 !apps/**/*.txt
 !apps/**/*.md
+!apps/**/*.js
 !apps/**/Makefile
 !apps/**/CMakeLists.txt
 apps/piface/libmcp23s17/
