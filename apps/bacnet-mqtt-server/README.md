@@ -93,6 +93,22 @@ sudo systemctl daemon-reload
 sudo systemctl enable bacnet-mqtt-server
 ```
 
+### Yocto/OpenEmbedded Build
+
+For embedded Linux systems using Yocto, a recipe is provided in the `yocto/` directory.
+See `yocto/README.md` for detailed instructions on integrating with Yocto Dunfell (3.1) and later.
+
+```bash
+# Copy recipe to your meta layer
+cp yocto/bacnet-mqtt-server_git.bb meta-yourlayer/recipes-connectivity/bacnet-mqtt-server/
+
+# Add to your image
+IMAGE_INSTALL_append = " bacnet-mqtt-server"
+
+# Build
+bitbake bacnet-mqtt-server
+```
+
 ## Configuration
 
 ### Main Configuration File
