@@ -10,7 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include <cjson/cJSON.h>
+#include <json-c/json.h>
 #include "sensor_map.h"
 #include "logging.h"
 
@@ -61,11 +61,10 @@ bool sensor_map_normalize_deveui(
  */
 bool sensor_map_load(sensor_map_t *map)
 {
-    FILE *fp = NULL;
-    char *file_content = NULL;
-    long file_size;
-    cJSON *root = NULL;
-    cJSON *entry_obj = NULL;
+    struct json_object *root = NULL;
+    struct json_object *entry_obj = NULL;
+    struct json_object *value_obj = NULL;
+    int array_len, i;
     struct stat st;
 
     if (!map || strlen(map->filepath) == 0) {
@@ -78,52 +77,17 @@ bool sensor_map_load(sensor_map_t *map)
         return false;
     }
 
-    /* Read file contents */
-    fp = fopen(map->filepath, "r");
-    if (!fp) {
-        LOG_ERROR("Failed to open sensor map file: %s", map->filepath);
-        return false;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    file_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-
-    if (file_size <= 0) {
-        LOG_ERROR("Sensor map file is empty: %s", map->filepath);
-        fclose(fp);
-        return false;
-    }
-
-    file_content = (char *)malloc((size_t)file_size + 1);
-    if (!file_content) {
-        LOG_ERROR("Failed to allocate memory for sensor map");
-        fclose(fp);
-        return false;
-    }
-
-    if (fread(file_content, 1, (size_t)file_size, fp) != (size_t)file_size) {
-        LOG_ERROR("Failed to read sensor map file: %s", map->filepath);
-        free(file_content);
-        fclose(fp);
-        return false;
-    }
-    file_content[file_size] = '\0';
-    fclose(fp);
-
-    /* Parse JSON */
-    root = cJSON_Parse(file_content);
-    free(file_content);
-
+    /* Parse JSON file */
+    root = json_object_from_file(map->filepath);
     if (!root) {
-        LOG_ERROR("Failed to parse sensor map JSON: %s", map->filepath);
+        LOG_ERROR("Failed to parse sensor map file: %s", map->filepath);
         return false;
     }
 
     /* Verify it's an array */
-    if (!cJSON_IsArray(root)) {
+    if (!json_object_is_type(root, json_type_array)) {
         LOG_ERROR("Sensor map must be a JSON array: %s", map->filepath);
-        cJSON_Delete(root);
+        json_object_put(root);
         return false;
     }
 
@@ -131,19 +95,12 @@ bool sensor_map_load(sensor_map_t *map)
     map->count = 0;
 
     /* Parse array entries */
-    cJSON_ArrayForEach(entry_obj, root) {
-        cJSON *id_obj = NULL;
-        cJSON *sensor_obj = NULL;
-        cJSON *src_obj = NULL;
+    array_len = json_object_array_length(root);
+    for (i = 0; i < array_len && map->count < SENSOR_MAP_MAX_ENTRIES; i++) {
         sensor_map_entry_t *entry = NULL;
 
-        if (map->count >= SENSOR_MAP_MAX_ENTRIES) {
-            LOG_WARNING("Sensor map max entries reached (%d)", 
-                       SENSOR_MAP_MAX_ENTRIES);
-            break;
-        }
-
-        if (!cJSON_IsObject(entry_obj)) {
+        entry_obj = json_object_array_get_idx(root, (size_t)i);
+        if (!entry_obj || !json_object_is_type(entry_obj, json_type_object)) {
             continue;
         }
 
@@ -151,23 +108,27 @@ bool sensor_map_load(sensor_map_t *map)
         memset(entry, 0, sizeof(sensor_map_entry_t));
 
         /* Get "id" field */
-        id_obj = cJSON_GetObjectItemCaseSensitive(entry_obj, "id");
-        if (cJSON_IsString(id_obj) && id_obj->valuestring) {
-            sensor_map_normalize_deveui(
-                id_obj->valuestring, entry->id, sizeof(entry->id));
+        if (json_object_object_get_ex(entry_obj, "id", &value_obj)) {
+            const char *id_str = json_object_get_string(value_obj);
+            if (id_str) {
+                sensor_map_normalize_deveui(id_str, entry->id, sizeof(entry->id));
+            }
         }
 
         /* Get "sensor" field */
-        sensor_obj = cJSON_GetObjectItemCaseSensitive(entry_obj, "sensor");
-        if (cJSON_IsString(sensor_obj) && sensor_obj->valuestring) {
-            strncpy(entry->sensor, sensor_obj->valuestring, 
-                   sizeof(entry->sensor) - 1);
+        if (json_object_object_get_ex(entry_obj, "sensor", &value_obj)) {
+            const char *sensor_str = json_object_get_string(value_obj);
+            if (sensor_str) {
+                strncpy(entry->sensor, sensor_str, sizeof(entry->sensor) - 1);
+            }
         }
 
         /* Get "src" field */
-        src_obj = cJSON_GetObjectItemCaseSensitive(entry_obj, "src");
-        if (cJSON_IsString(src_obj) && src_obj->valuestring) {
-            strncpy(entry->src, src_obj->valuestring, sizeof(entry->src) - 1);
+        if (json_object_object_get_ex(entry_obj, "src", &value_obj)) {
+            const char *src_str = json_object_get_string(value_obj);
+            if (src_str) {
+                strncpy(entry->src, src_str, sizeof(entry->src) - 1);
+            }
         }
 
         /* Only add if we have at least id and sensor */
@@ -178,7 +139,7 @@ bool sensor_map_load(sensor_map_t *map)
         }
     }
 
-    cJSON_Delete(root);
+    json_object_put(root);
     map->last_loaded = time(NULL);
 
     LOG_INFO("Loaded %zu sensor mappings from %s", map->count, map->filepath);

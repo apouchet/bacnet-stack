@@ -8,7 +8,7 @@
 #
 # Dependencies:
 #   - libmosquitto-dev (MQTT client library)
-#   - libcjson-dev (JSON parsing/serialization)
+#   - libjson-c-dev (JSON parsing/serialization)
 #   - duktape-dev (JavaScript engine)
 #
 # Build with: make lorawan-decoder
@@ -34,7 +34,7 @@ OBJS += ${SRC:.c=.o}
 
 # Additional libraries
 MQTT_LIB = -lmosquitto
-JSON_LIB = -lcjson
+JSON_LIB = -ljson-c
 JS_LIB = -lduktape
 PTHREAD_LIB = -lpthread
 
@@ -47,7 +47,7 @@ CSTANDARD = -std=c99
 all: Makefile ${TARGET_BIN}
 
 ${TARGET_BIN}: ${OBJS} Makefile
-	${CC} ${PFLAGS} ${OBJS} ${LFLAGS} ${EXTRA_LFLAGS} -o $@
+	${CC} ${PFLAGS} ${OBJS} ${EXTRA_LFLAGS} -Wl,-lc,-lgcc,-lrt,-lm -o $@
 	size $@
 	cp $@ ../../bin
 

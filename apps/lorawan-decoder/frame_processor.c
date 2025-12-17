@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <cjson/cJSON.h>
+#include <json-c/json.h>
 #include "frame_processor.h"
 #include "mqtt_handler.h"
 #include "js_engine.h"
@@ -118,10 +118,10 @@ bool frame_processor_handle_message(
     const void *payload,
     size_t payload_len)
 {
-    cJSON *root = NULL;
-    cJSON *deveui_obj = NULL;
-    cJSON *data_obj = NULL;
-    cJSON *decoded_obj = NULL;
+    struct json_object *root = NULL;
+    struct json_object *deveui_obj = NULL;
+    struct json_object *data_obj = NULL;
+    struct json_object *decoded_obj = NULL;
     const char *deveui = NULL;
     const char *data = NULL;
     const sensor_map_entry_t *sensor_entry = NULL;
@@ -129,7 +129,7 @@ bool frame_processor_handle_message(
     js_result_t js_result = {0};
     frame_direction_t direction;
     char output_topic[256];
-    char *output_json = NULL;
+    const char *output_json = NULL;
     bool result = false;
     char *payload_str = NULL;
 
@@ -158,7 +158,7 @@ bool frame_processor_handle_message(
     payload_str[payload_len] = '\0';
 
     /* Parse JSON */
-    root = cJSON_Parse(payload_str);
+    root = json_tokener_parse(payload_str);
     free(payload_str);
     payload_str = NULL;
 
@@ -169,20 +169,20 @@ bool frame_processor_handle_message(
     }
 
     /* Extract devEUI */
-    deveui_obj = cJSON_GetObjectItemCaseSensitive(root, "deveui");
-    if (!cJSON_IsString(deveui_obj) || !deveui_obj->valuestring) {
+    if (!json_object_object_get_ex(root, "deveui", &deveui_obj) ||
+        !json_object_is_type(deveui_obj, json_type_string)) {
         LOG_DEBUG("No deveui in message, forwarding unchanged");
         goto forward_unchanged;
     }
-    deveui = deveui_obj->valuestring;
+    deveui = json_object_get_string(deveui_obj);
 
     /* Extract data */
-    data_obj = cJSON_GetObjectItemCaseSensitive(root, "data");
-    if (!cJSON_IsString(data_obj) || !data_obj->valuestring) {
+    if (!json_object_object_get_ex(root, "data", &data_obj) ||
+        !json_object_is_type(data_obj, json_type_string)) {
         LOG_DEBUG("No data in message from %s, forwarding unchanged", deveui);
         goto forward_unchanged;
     }
-    data = data_obj->valuestring;
+    data = json_object_get_string(data_obj);
 
     /* Look up sensor mapping */
     if (processor->sensor_map) {
@@ -216,7 +216,8 @@ bool frame_processor_handle_message(
             LOG_WARNING("Decoder error for %s: %s", deveui, js_result.error_msg);
             
             /* Add error to frame */
-            cJSON_AddStringToObject(root, "decoderError", js_result.error_msg);
+            json_object_object_add(root, "decoderError", 
+                json_object_new_string(js_result.error_msg));
             goto forward_with_error;
         }
     } else {
@@ -224,14 +225,16 @@ bool frame_processor_handle_message(
         if (js_has_encode_downlink(js_ctx)) {
             if (!js_encode_downlink(js_ctx, data, &js_result)) {
                 LOG_WARNING("Encoder error for %s: %s", deveui, js_result.error_msg);
-                cJSON_AddStringToObject(root, "decoderError", js_result.error_msg);
+                json_object_object_add(root, "decoderError", 
+                    json_object_new_string(js_result.error_msg));
                 goto forward_with_error;
             }
         } else if (js_has_decode_uplink(js_ctx)) {
             /* Fall back to decodeUplink for downlink */
             if (!js_decode_uplink(js_ctx, data, &js_result)) {
                 LOG_WARNING("Decoder error for %s: %s", deveui, js_result.error_msg);
-                cJSON_AddStringToObject(root, "decoderError", js_result.error_msg);
+                json_object_object_add(root, "decoderError", 
+                    json_object_new_string(js_result.error_msg));
                 goto forward_with_error;
             }
         } else {
@@ -242,24 +245,18 @@ bool frame_processor_handle_message(
 
     /* Add decoded data to frame */
     if (js_result.json_result) {
-        cJSON *parsed_result = cJSON_Parse(js_result.json_result);
+        struct json_object *parsed_result = json_tokener_parse(js_result.json_result);
         if (parsed_result) {
-            if (direction == FRAME_DIRECTION_UPLINK) {
-                decoded_obj = cJSON_CreateObject();
-                if (decoded_obj) {
-                    cJSON_AddItemToObject(decoded_obj, "data", parsed_result);
-                    cJSON_AddItemToObject(root, "uplinkDecoded", decoded_obj);
+            decoded_obj = json_object_new_object();
+            if (decoded_obj) {
+                json_object_object_add(decoded_obj, "data", parsed_result);
+                if (direction == FRAME_DIRECTION_UPLINK) {
+                    json_object_object_add(root, "uplinkDecoded", decoded_obj);
                 } else {
-                    cJSON_Delete(parsed_result);
+                    json_object_object_add(root, "downlinkDecoded", decoded_obj);
                 }
             } else {
-                decoded_obj = cJSON_CreateObject();
-                if (decoded_obj) {
-                    cJSON_AddItemToObject(decoded_obj, "data", parsed_result);
-                    cJSON_AddItemToObject(root, "downlinkDecoded", decoded_obj);
-                } else {
-                    cJSON_Delete(parsed_result);
-                }
+                json_object_put(parsed_result);
             }
         }
     }
@@ -276,7 +273,7 @@ forward_unchanged:
     }
 
     /* Serialize and publish */
-    output_json = cJSON_PrintUnformatted(root);
+    output_json = json_object_to_json_string_ext(root, JSON_C_TO_STRING_PLAIN);
     if (!output_json) {
         LOG_ERROR("Failed to serialize output JSON");
         goto cleanup;
@@ -292,12 +289,10 @@ forward_unchanged:
     }
 
 cleanup:
-    if (output_json) {
-        cJSON_free(output_json);
-    }
+    /* Note: output_json is managed by json-c and freed with json_object_put */
     js_result_free(&js_result);
     if (root) {
-        cJSON_Delete(root);
+        json_object_put(root);
     }
 
     return result;

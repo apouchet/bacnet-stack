@@ -17,10 +17,10 @@ Install the required development libraries:
 
 ```bash
 # Ubuntu/Debian
-sudo apt-get install libmosquitto-dev libcjson-dev duktape-dev
+sudo apt-get install libmosquitto-dev libjson-c-dev duktape-dev
 
 # Fedora/RHEL
-sudo dnf install mosquitto-devel cjson-devel duktape-devel
+sudo dnf install mosquitto-devel json-c-devel duktape-devel
 ```
 
 ## Building
