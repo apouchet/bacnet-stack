@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
     setup_signals();
 
     /* Initialize sensor map */
-    if (!sensor_map_init(&g_sensor_map, g_config.paths.sensors_map)) {
+    if (!sensor_map_init(&g_sensor_map, g_config.paths.sensors_maps)) {
         LOG_WARNING("Failed to load sensor map, continuing anyway");
     }
 

@@ -52,8 +52,8 @@ void config_init_defaults(app_config_t *config)
 
     /* Paths defaults */
     strncpy(
-        config->paths.sensors_map, SENSORS_MAP_DEFAULT_PATH,
-        sizeof(config->paths.sensors_map) - 1);
+        config->paths.sensors_maps, SENSORS_MAP_DEFAULT_PATH,
+        sizeof(config->paths.sensors_maps) - 1);
     strncpy(
         config->paths.sensors_base, SENSORS_DEF_BASE_PATH,
         sizeof(config->paths.sensors_base) - 1);
@@ -251,9 +251,9 @@ static void parse_paths_section(
             continue;
         }
 
-        if (strcmp(key_str, "sensors_map") == 0) {
+        if (strcmp(key_str, "sensors_maps") == 0) {
             yaml_copy_string(
-                config->paths.sensors_map, sizeof(config->paths.sensors_map),
+                config->paths.sensors_maps, sizeof(config->paths.sensors_maps),
                 val_str);
         } else if (strcmp(key_str, "sensors_base") == 0) {
             yaml_copy_string(
@@ -510,7 +510,7 @@ void config_print(const app_config_t *config)
     printf("    Vendor Name: %s\n", config->bacnet.vendor_name);
     printf("    Model Name: %s\n", config->bacnet.model_name);
     printf("  Paths:\n");
-    printf("    Sensors Map: %s\n", config->paths.sensors_map);
+    printf("    Sensors Map: %s\n", config->paths.sensors_maps);
     printf("    Sensors Base: %s\n", config->paths.sensors_base);
     printf("  Logging:\n");
     printf("    Level: %d\n", config->logging.level);

@@ -25,7 +25,7 @@ mkdir -p "$CONFIG_DIR"
 mkdir -p "$SENSORS_DIR"
 
 # Create test sensor map
-cat > "$CONFIG_DIR/sensors_map.json" << 'EOF'
+cat > "$CONFIG_DIR/sensors_maps.json" << 'EOF'
 [
   {
     "id": "70-b3-d5-40-f7-5b-24-c2",
@@ -64,7 +64,7 @@ bacnet:
   device_name: "Test-Device"
 
 paths:
-  sensors_map: "$CONFIG_DIR/sensors_map.json"
+  sensors_maps: "$CONFIG_DIR/sensors_maps.json"
   sensors_base: "$TEST_DIR/config/sensors"
 
 logging:

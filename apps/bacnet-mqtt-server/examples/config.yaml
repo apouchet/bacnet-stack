@@ -31,7 +31,7 @@ bacnet:
 
 # File paths for sensor configuration
 paths:
-  sensors_map: "/var/config/scada/sensors_map.json"
+  sensors_maps: "/var/config/scada/sensors_maps.json"
   sensors_base: "/var/config/scada/sensors"
 
 # Logging configuration
