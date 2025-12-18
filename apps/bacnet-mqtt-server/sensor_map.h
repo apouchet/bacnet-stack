@@ -5,7 +5,7 @@
  * @date 2024
  * @copyright SPDX-License-Identifier: MIT
  *
- * This module handles loading and caching the sensors_maps.json file
+ * This module handles loading and caching the sensors_map.json file
  * which maps devEUI identifiers to sensor types.
  */
 #ifndef BACNET_MQTT_SENSOR_MAP_H
@@ -49,7 +49,7 @@ extern "C" {
 /**
  * @brief Initialize the sensor map module
  * @param map Pointer to sensor map structure
- * @param filepath Path to sensors_maps.json file
+ * @param filepath Path to sensors_map.json file
  * @return true on success, false on failure
  */
 bool sensor_map_init(sensor_map_t *map, const char *filepath);

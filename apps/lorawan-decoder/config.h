@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 /* Default configuration paths */
-#define CONFIG_SENSORS_MAP_PATH "/var/config/scada/sensors_maps.json"
+#define CONFIG_SENSORS_MAP_PATH "/var/config/scada/sensors_map.json"
 #define CONFIG_SENSORS_DECODER_PATH "/var/config/scada/sensors/lora"
 #define CONFIG_SENSORS_DECODER_PATH_ALT "/etc/scada/sensors/lora"
 

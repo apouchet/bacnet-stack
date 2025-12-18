@@ -70,7 +70,7 @@ bitbake bacnet-mqtt-server
 | `/usr/bin/bacnet-mqtt-server` | Main binary |
 | `/lib/systemd/system/bacnet-mqtt-server.service` | Systemd service file |
 | `/etc/bacnet-mqtt-server/config.yaml` | Main configuration |
-| `/var/config/scada/sensors_maps.json` | Sensor mapping |
+| `/var/config/scada/sensors_map.json` | Sensor mapping |
 | `/var/config/scada/sensors/lora/...` | Sensor definitions |
 
 ## Runtime Configuration
@@ -78,7 +78,7 @@ bitbake bacnet-mqtt-server
 After installation, configure the server:
 
 1. Edit `/etc/bacnet-mqtt-server/config.yaml` with your MQTT broker settings
-2. Update `/var/config/scada/sensors_maps.json` with your device mappings
+2. Update `/var/config/scada/sensors_map.json` with your device mappings
 3. Add sensor definitions to `/var/config/scada/sensors/lora/`
 
 Start the service:

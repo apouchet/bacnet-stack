@@ -66,7 +66,7 @@ void config_print_usage(const char *program_name)
     printf("  -P, --password PASS     MQTT password\n");
     printf("  -i, --client-id ID      MQTT client ID (default: %s)\n", 
            MQTT_DEFAULT_CLIENT_ID);
-    printf("  -m, --sensors-map PATH  Path to sensors_maps.json\n");
+    printf("  -m, --sensors-map PATH  Path to sensors_map.json\n");
     printf("  -d, --decoders PATH     Path to decoder files directory\n");
     printf("  -l, --log-level LEVEL   Log level: debug, info, warning, error\n");
     printf("  -j, --json-output       Output logs in JSON format\n");

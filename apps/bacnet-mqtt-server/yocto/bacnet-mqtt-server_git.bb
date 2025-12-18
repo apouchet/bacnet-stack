@@ -82,7 +82,7 @@ do_install() {
     # Install sensor configuration examples
     install -d ${D}${localstatedir}/config/scada/sensors/lora/nexelec
     install -d ${D}${localstatedir}/config/scada/sensors/lora/generic
-    install -m 0644 ${S}/apps/bacnet-mqtt-server/examples/sensors_maps.json ${D}${localstatedir}/config/scada/
+    install -m 0644 ${S}/apps/bacnet-mqtt-server/examples/sensors_map.json ${D}${localstatedir}/config/scada/
     install -m 0644 ${S}/apps/bacnet-mqtt-server/examples/sensors/lora/nexelec/X565LS.json ${D}${localstatedir}/config/scada/sensors/lora/nexelec/
     install -m 0644 ${S}/apps/bacnet-mqtt-server/examples/sensors/lora/generic/temp-humidity.json ${D}${localstatedir}/config/scada/sensors/lora/generic/
 }
@@ -96,7 +96,7 @@ SYSTEMD_AUTO_ENABLE = "disable"
 # Package configuration files separately
 CONFFILES_${PN} = " \
     ${sysconfdir}/bacnet-mqtt-server/config.yaml \
-    ${localstatedir}/config/scada/sensors_maps.json \
+    ${localstatedir}/config/scada/sensors_map.json \
 "
 
 # Files to package

@@ -53,7 +53,7 @@ Options:
   -u, --username USER     MQTT username
   -P, --password PASS     MQTT password
   -i, --client-id ID      MQTT client ID (default: lorawan-decoder)
-  -m, --sensors-map PATH  Path to sensors_maps.json
+  -m, --sensors-map PATH  Path to sensors_map.json
   -d, --decoders PATH     Path to decoder files directory
   -l, --log-level LEVEL   Log level: debug, info, warning, error
   -j, --json-output       Output logs in JSON format
@@ -64,7 +64,7 @@ Options:
 
 ### Sensor Mapping File
 
-The service loads sensor mappings from `/var/config/scada/sensors_maps.json`:
+The service loads sensor mappings from `/var/config/scada/sensors_map.json`:
 
 ```json
 [

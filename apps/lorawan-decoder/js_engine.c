@@ -61,6 +61,62 @@ static char *get_exception_message(JSContext *ctx)
 }
 
 /**
+ * @brief Base64 decoding table
+ */
+static const int b64_table[256] = {
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63,
+    52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-1,-1,-1,
+    -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
+    15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,
+    -1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
+    41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+};
+
+/**
+ * @brief Decode base64 string to bytes
+ */
+static int base64_decode(const char *input, unsigned char *output, size_t *out_len)
+{
+    size_t len = strlen(input);
+    size_t i, j = 0;
+    int v;
+
+    for (i = 0; i < len; i += 4) {
+        int a = b64_table[(unsigned char)input[i]];
+        int b = (i + 1 < len) ? b64_table[(unsigned char)input[i + 1]] : -1;
+        int c = (i + 2 < len) ? b64_table[(unsigned char)input[i + 2]] : -1;
+        int d = (i + 3 < len) ? b64_table[(unsigned char)input[i + 3]] : -1;
+
+        if (a == -1 || b == -1) break;
+
+        v = (a << 18) | (b << 12);
+        output[j++] = (v >> 16) & 0xFF;
+
+        if (c != -1) {
+            v |= (c << 6);
+            output[j++] = (v >> 8) & 0xFF;
+        }
+
+        if (d != -1) {
+            v |= d;
+            output[j++] = v & 0xFF;
+        }
+    }
+
+    *out_len = j;
+    return 0;
+}
+
+/**
  * @brief Create a new JavaScript context with decoder loaded
  */
 js_context_t *js_context_create(const char *source_code)
@@ -242,10 +298,21 @@ bool js_decode_uplink(
         return false;
     }
 
-    /* Create the argument string */
-    arg_val = JS_NewString(ctx, base64_data);
+    /* Build input object: { bytes: [...] } from base64 */
+    unsigned char bytes[256];
+    size_t bytes_len = 0;
+    base64_decode(base64_data, bytes, &bytes_len);
 
-    /* Call the function */
+    JSValue input_obj = JS_NewObject(ctx);
+    JSValue bytes_array = JS_NewArray(ctx);
+    for (size_t i = 0; i < bytes_len; i++) {
+        JS_SetPropertyUint32(ctx, bytes_array, i, JS_NewInt32(ctx, bytes[i]));
+    }
+    JS_SetPropertyStr(ctx, input_obj, "bytes", bytes_array);
+
+    arg_val = input_obj;
+
+    /* Call decodeUplink(input) */
     ret_val = JS_Call(ctx, func_val, global_obj, 1, &arg_val);
 
     JS_FreeValue(ctx, arg_val);

@@ -23,7 +23,7 @@ This application bridges MQTT-based IoT sensors (particularly LoRaWAN sensors) t
                                   ▼
                         ┌─────────────────────┐
                         │  JSON Config Files  │
-                        │ - sensors_maps.json │
+                        │ - sensors_map.json │
                         │ - sensor/*.json     │
                         └─────────────────────┘
 ```
@@ -84,7 +84,7 @@ sudo cp apps/bacnet-mqtt-server/examples/config.yaml /etc/bacnet-mqtt-server/
 
 # Create sensor config directories
 sudo mkdir -p /var/config/scada/sensors/lora
-sudo cp apps/bacnet-mqtt-server/examples/sensors_maps.json /var/config/scada/
+sudo cp apps/bacnet-mqtt-server/examples/sensors_map.json /var/config/scada/
 sudo cp -r apps/bacnet-mqtt-server/examples/sensors/* /var/config/scada/sensors/
 
 # Install systemd service (optional)
@@ -127,7 +127,7 @@ bacnet:
   device_name: "BACnet-MQTT-Server"
 
 paths:
-  sensors_maps: "/var/config/scada/sensors_maps.json"
+  sensors_map: "/var/config/scada/sensors_map.json"
   sensors_base: "/var/config/scada/sensors"
 
 logging:
@@ -136,7 +136,7 @@ logging:
 
 ### Sensor Map File
 
-Location: `/var/config/scada/sensors_maps.json`
+Location: `/var/config/scada/sensors_map.json`
 
 Maps device EUIs to sensor types:
 
@@ -300,7 +300,7 @@ All dynamically created Analog Input objects support COV:
 ### Adding New Sensor Types
 
 1. Create a new sensor definition JSON file in `/var/config/scada/sensors/lora/{vendor}/`
-2. Add the sensor mapping to `sensors_maps.json`
+2. Add the sensor mapping to `sensors_map.json`
 3. The server will automatically pick up the new configuration (checks every 10 seconds)
 
 ### Adding New Property Types
@@ -345,7 +345,7 @@ export BACNET_IFACE=eth0
 ./bin/bacnet-mqtt-server --foreground --log-level debug
 
 # Check:
-# 1. devEUI is in sensors_maps.json
+# 1. devEUI is in sensors_map.json
 # 2. Sensor definition file exists
 # 3. Property names match between MQTT data and definition
 ```

@@ -15,7 +15,7 @@
 #define CONFIG_DEFAULT_PATH "/etc/bacnet-mqtt-server/config.yaml"
 
 /* Default paths for sensor configuration */
-#define SENSORS_MAP_DEFAULT_PATH "/var/config/scada/sensors_maps.json"
+#define SENSORS_MAP_DEFAULT_PATH "/var/config/scada/sensors_map.json"
 #define SENSORS_DEF_BASE_PATH "/var/config/scada/sensors"
 
 /* MQTT defaults */
@@ -71,7 +71,7 @@ typedef struct bacnet_config {
  * @brief Paths configuration structure
  */
 typedef struct paths_config {
-    char sensors_maps[512];
+    char sensors_map[512];
     char sensors_base[512];
 } paths_config_t;
 
