@@ -1,17 +1,17 @@
 /**
  * @file
- * @brief JavaScript engine implementation using Duktape
+ * @brief JavaScript engine implementation using QuickJS
  * @author GitHub Copilot
  * @date 2024
  * @copyright SPDX-License-Identifier: MIT
  *
- * This module implements the JavaScript engine abstraction using Duktape,
+ * This module implements the JavaScript engine abstraction using QuickJS,
  * providing safe execution of decoder scripts with proper error handling.
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <duktape.h>
+#include <quickjs/quickjs.h>
 #include "js_engine.h"
 #include "logging.h"
 
@@ -19,27 +19,18 @@
  * @brief JavaScript context structure (opaque)
  */
 struct js_context {
-    duk_context *duk_ctx;
+    JSRuntime *rt;
+    JSContext *ctx;
     bool has_decode_uplink;
     bool has_encode_downlink;
 };
-
-/**
- * @brief Custom fatal error handler for Duktape
- */
-static void duk_fatal_handler(void *udata, const char *msg)
-{
-    (void)udata;
-    LOG_ERROR("Duktape fatal error: %s", msg ? msg : "unknown");
-    /* Don't abort - we want to handle errors gracefully */
-}
 
 /**
  * @brief Initialize the JavaScript engine subsystem
  */
 bool js_engine_init(void)
 {
-    LOG_INFO("JavaScript engine (Duktape) initialized");
+    LOG_INFO("JavaScript engine (QuickJS) initialized");
     return true;
 }
 
@@ -52,107 +43,150 @@ void js_engine_shutdown(void)
 }
 
 /**
+ * @brief Get exception message from QuickJS context
+ */
+static char *get_exception_message(JSContext *ctx)
+{
+    JSValue exception = JS_GetException(ctx);
+    const char *str = JS_ToCString(ctx, exception);
+    char *result = NULL;
+    
+    if (str) {
+        result = strdup(str);
+        JS_FreeCString(ctx, str);
+    }
+    
+    JS_FreeValue(ctx, exception);
+    return result;
+}
+
+/**
  * @brief Create a new JavaScript context with decoder loaded
  */
 js_context_t *js_context_create(const char *source_code)
 {
-    js_context_t *ctx = NULL;
-    duk_context *duk_ctx = NULL;
+    js_context_t *js_ctx = NULL;
+    JSRuntime *rt = NULL;
+    JSContext *ctx = NULL;
+    JSValue result;
+    JSValue global_obj;
+    JSValue func_val;
 
     if (!source_code) {
         LOG_ERROR("Cannot create JS context: NULL source code");
         return NULL;
     }
 
-    ctx = (js_context_t *)calloc(1, sizeof(js_context_t));
-    if (!ctx) {
+    js_ctx = (js_context_t *)calloc(1, sizeof(js_context_t));
+    if (!js_ctx) {
         LOG_ERROR("Failed to allocate JS context");
         return NULL;
     }
 
-    /* Create Duktape heap with custom fatal handler */
-    duk_ctx = duk_create_heap(NULL, NULL, NULL, NULL, duk_fatal_handler);
-    if (!duk_ctx) {
-        LOG_ERROR("Failed to create Duktape heap");
-        free(ctx);
+    /* Create QuickJS runtime */
+    rt = JS_NewRuntime();
+    if (!rt) {
+        LOG_ERROR("Failed to create QuickJS runtime");
+        free(js_ctx);
         return NULL;
     }
 
-    ctx->duk_ctx = duk_ctx;
-
-    /* Compile and execute the source code to define functions */
-    if (duk_pcompile_string(duk_ctx, 0, source_code) != 0) {
-        LOG_ERROR("Failed to compile decoder: %s", 
-                 duk_safe_to_string(duk_ctx, -1));
-        duk_destroy_heap(duk_ctx);
-        free(ctx);
+    /* Create QuickJS context */
+    ctx = JS_NewContext(rt);
+    if (!ctx) {
+        LOG_ERROR("Failed to create QuickJS context");
+        JS_FreeRuntime(rt);
+        free(js_ctx);
         return NULL;
     }
 
-    /* Execute the compiled code */
-    if (duk_pcall(duk_ctx, 0) != 0) {
-        LOG_ERROR("Failed to execute decoder: %s", 
-                 duk_safe_to_string(duk_ctx, -1));
-        duk_destroy_heap(duk_ctx);
-        free(ctx);
+    js_ctx->rt = rt;
+    js_ctx->ctx = ctx;
+
+    /* Evaluate the source code to define functions */
+    result = JS_Eval(ctx, source_code, strlen(source_code), "<decoder>", 
+                     JS_EVAL_TYPE_GLOBAL);
+    
+    if (JS_IsException(result)) {
+        char *err = get_exception_message(ctx);
+        LOG_ERROR("Failed to evaluate decoder: %s", err ? err : "unknown");
+        free(err);
+        JS_FreeValue(ctx, result);
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
+        free(js_ctx);
         return NULL;
     }
-    duk_pop(duk_ctx); /* Pop execution result */
+    JS_FreeValue(ctx, result);
 
     /* Check if decodeUplink function exists */
-    duk_get_global_string(duk_ctx, "decodeUplink");
-    ctx->has_decode_uplink = duk_is_function(duk_ctx, -1);
-    duk_pop(duk_ctx);
+    global_obj = JS_GetGlobalObject(ctx);
+    
+    func_val = JS_GetPropertyStr(ctx, global_obj, "decodeUplink");
+    js_ctx->has_decode_uplink = JS_IsFunction(ctx, func_val);
+    JS_FreeValue(ctx, func_val);
 
     /* Check if encodeDownlink function exists */
-    duk_get_global_string(duk_ctx, "encodeDownlink");
-    ctx->has_encode_downlink = duk_is_function(duk_ctx, -1);
-    duk_pop(duk_ctx);
+    func_val = JS_GetPropertyStr(ctx, global_obj, "encodeDownlink");
+    js_ctx->has_encode_downlink = JS_IsFunction(ctx, func_val);
+    JS_FreeValue(ctx, func_val);
 
-    if (!ctx->has_decode_uplink) {
+    JS_FreeValue(ctx, global_obj);
+
+    if (!js_ctx->has_decode_uplink) {
         LOG_WARNING("Decoder does not have decodeUplink function");
     }
 
     LOG_DEBUG("JS context created (decodeUplink=%d, encodeDownlink=%d)",
-             ctx->has_decode_uplink, ctx->has_encode_downlink);
+             js_ctx->has_decode_uplink, js_ctx->has_encode_downlink);
 
-    return ctx;
+    return js_ctx;
 }
 
 /**
  * @brief Destroy a JavaScript context
  */
-void js_context_destroy(js_context_t *ctx)
+void js_context_destroy(js_context_t *js_ctx)
 {
-    if (!ctx) {
+    if (!js_ctx) {
         return;
     }
 
-    if (ctx->duk_ctx) {
-        duk_destroy_heap(ctx->duk_ctx);
+    if (js_ctx->ctx) {
+        JS_FreeContext(js_ctx->ctx);
     }
 
-    free(ctx);
+    if (js_ctx->rt) {
+        JS_FreeRuntime(js_ctx->rt);
+    }
+
+    free(js_ctx);
 }
 
 /**
- * @brief Convert Duktape value at stack top to JSON string
+ * @brief Convert QuickJS value to JSON string
  */
-static char *duk_value_to_json(duk_context *duk_ctx)
+static char *js_value_to_json(JSContext *ctx, JSValue val)
 {
-    const char *json_str = NULL;
+    JSValue json_val;
+    const char *json_str;
     char *result = NULL;
 
     /* Use JSON.stringify to convert value to JSON */
-    duk_dup(duk_ctx, -1);
-    json_str = duk_json_encode(duk_ctx, -1);
+    json_val = JS_JSONStringify(ctx, val, JS_UNDEFINED, JS_UNDEFINED);
     
+    if (JS_IsException(json_val)) {
+        JS_FreeValue(ctx, json_val);
+        return NULL;
+    }
+
+    json_str = JS_ToCString(ctx, json_val);
     if (json_str) {
         result = strdup(json_str);
+        JS_FreeCString(ctx, json_str);
     }
     
-    duk_pop(duk_ctx); /* Pop JSON string */
-    
+    JS_FreeValue(ctx, json_val);
     return result;
 }
 
@@ -160,11 +194,15 @@ static char *duk_value_to_json(duk_context *duk_ctx)
  * @brief Call the decodeUplink function with base64 data
  */
 bool js_decode_uplink(
-    js_context_t *ctx,
+    js_context_t *js_ctx,
     const char *base64_data,
     js_result_t *result)
 {
-    duk_context *duk_ctx = NULL;
+    JSContext *ctx;
+    JSValue global_obj;
+    JSValue func_val;
+    JSValue arg_val;
+    JSValue ret_val;
 
     if (!result) {
         return false;
@@ -172,13 +210,13 @@ bool js_decode_uplink(
 
     memset(result, 0, sizeof(js_result_t));
 
-    if (!ctx || !ctx->duk_ctx) {
+    if (!js_ctx || !js_ctx->ctx) {
         strncpy(result->error_msg, "Invalid JS context", 
                sizeof(result->error_msg) - 1);
         return false;
     }
 
-    if (!ctx->has_decode_uplink) {
+    if (!js_ctx->has_decode_uplink) {
         strncpy(result->error_msg, "No decodeUplink function", 
                sizeof(result->error_msg) - 1);
         return false;
@@ -190,32 +228,43 @@ bool js_decode_uplink(
         return false;
     }
 
-    duk_ctx = ctx->duk_ctx;
+    ctx = js_ctx->ctx;
 
     /* Get the decodeUplink function */
-    duk_get_global_string(duk_ctx, "decodeUplink");
-    if (!duk_is_function(duk_ctx, -1)) {
-        duk_pop(duk_ctx);
+    global_obj = JS_GetGlobalObject(ctx);
+    func_val = JS_GetPropertyStr(ctx, global_obj, "decodeUplink");
+
+    if (!JS_IsFunction(ctx, func_val)) {
+        JS_FreeValue(ctx, func_val);
+        JS_FreeValue(ctx, global_obj);
         strncpy(result->error_msg, "decodeUplink is not a function", 
                sizeof(result->error_msg) - 1);
         return false;
     }
 
-    /* Push the base64 data as argument */
-    duk_push_string(duk_ctx, base64_data);
+    /* Create the argument string */
+    arg_val = JS_NewString(ctx, base64_data);
 
     /* Call the function */
-    if (duk_pcall(duk_ctx, 1) != 0) {
-        const char *err = duk_safe_to_string(duk_ctx, -1);
+    ret_val = JS_Call(ctx, func_val, global_obj, 1, &arg_val);
+
+    JS_FreeValue(ctx, arg_val);
+    JS_FreeValue(ctx, func_val);
+
+    if (JS_IsException(ret_val)) {
+        char *err = get_exception_message(ctx);
         snprintf(result->error_msg, sizeof(result->error_msg),
                 "Decoder error: %s", err ? err : "unknown");
-        duk_pop(duk_ctx);
+        free(err);
+        JS_FreeValue(ctx, ret_val);
+        JS_FreeValue(ctx, global_obj);
         return false;
     }
 
     /* Convert result to JSON */
-    result->json_result = duk_value_to_json(duk_ctx);
-    duk_pop(duk_ctx); /* Pop result */
+    result->json_result = js_value_to_json(ctx, ret_val);
+    JS_FreeValue(ctx, ret_val);
+    JS_FreeValue(ctx, global_obj);
 
     if (!result->json_result) {
         strncpy(result->error_msg, "Failed to convert result to JSON", 
@@ -228,25 +277,18 @@ bool js_decode_uplink(
 }
 
 /**
- * @brief Safe JSON decode wrapper for duk_safe_call
- */
-static duk_ret_t safe_json_decode(duk_context *duk_ctx, void *udata)
-{
-    (void)udata;
-    /* Stack: [ string ] -> [ decoded_object ] */
-    duk_json_decode(duk_ctx, -1);
-    return 1; /* One return value */
-}
-
-/**
  * @brief Call the encodeDownlink function
  */
 bool js_encode_downlink(
-    js_context_t *ctx,
+    js_context_t *js_ctx,
     const char *json_data,
     js_result_t *result)
 {
-    duk_context *duk_ctx = NULL;
+    JSContext *ctx;
+    JSValue global_obj;
+    JSValue func_val;
+    JSValue arg_val;
+    JSValue ret_val;
 
     if (!result) {
         return false;
@@ -254,13 +296,13 @@ bool js_encode_downlink(
 
     memset(result, 0, sizeof(js_result_t));
 
-    if (!ctx || !ctx->duk_ctx) {
+    if (!js_ctx || !js_ctx->ctx) {
         strncpy(result->error_msg, "Invalid JS context", 
                sizeof(result->error_msg) - 1);
         return false;
     }
 
-    if (!ctx->has_encode_downlink) {
+    if (!js_ctx->has_encode_downlink) {
         strncpy(result->error_msg, "No encodeDownlink function", 
                sizeof(result->error_msg) - 1);
         return false;
@@ -272,40 +314,54 @@ bool js_encode_downlink(
         return false;
     }
 
-    duk_ctx = ctx->duk_ctx;
+    ctx = js_ctx->ctx;
 
     /* Get the encodeDownlink function */
-    duk_get_global_string(duk_ctx, "encodeDownlink");
-    if (!duk_is_function(duk_ctx, -1)) {
-        duk_pop(duk_ctx);
+    global_obj = JS_GetGlobalObject(ctx);
+    func_val = JS_GetPropertyStr(ctx, global_obj, "encodeDownlink");
+
+    if (!JS_IsFunction(ctx, func_val)) {
+        JS_FreeValue(ctx, func_val);
+        JS_FreeValue(ctx, global_obj);
         strncpy(result->error_msg, "encodeDownlink is not a function", 
                sizeof(result->error_msg) - 1);
         return false;
     }
 
-    /* Parse JSON safely */
-    duk_push_string(duk_ctx, json_data);
-    if (duk_safe_call(duk_ctx, safe_json_decode, NULL, 1, 1) != 0) {
-        const char *err = duk_safe_to_string(duk_ctx, -1);
+    /* Parse JSON input */
+    arg_val = JS_ParseJSON(ctx, json_data, strlen(json_data), "<input>");
+    
+    if (JS_IsException(arg_val)) {
+        char *err = get_exception_message(ctx);
         snprintf(result->error_msg, sizeof(result->error_msg),
                 "JSON parse error: %s", err ? err : "unknown");
-        duk_pop(duk_ctx); /* Pop error */
-        duk_pop(duk_ctx); /* Pop function */
+        free(err);
+        JS_FreeValue(ctx, arg_val);
+        JS_FreeValue(ctx, func_val);
+        JS_FreeValue(ctx, global_obj);
         return false;
     }
 
     /* Call the function */
-    if (duk_pcall(duk_ctx, 1) != 0) {
-        const char *err = duk_safe_to_string(duk_ctx, -1);
+    ret_val = JS_Call(ctx, func_val, global_obj, 1, &arg_val);
+
+    JS_FreeValue(ctx, arg_val);
+    JS_FreeValue(ctx, func_val);
+
+    if (JS_IsException(ret_val)) {
+        char *err = get_exception_message(ctx);
         snprintf(result->error_msg, sizeof(result->error_msg),
                 "Encoder error: %s", err ? err : "unknown");
-        duk_pop(duk_ctx);
+        free(err);
+        JS_FreeValue(ctx, ret_val);
+        JS_FreeValue(ctx, global_obj);
         return false;
     }
 
     /* Convert result to JSON */
-    result->json_result = duk_value_to_json(duk_ctx);
-    duk_pop(duk_ctx); /* Pop result */
+    result->json_result = js_value_to_json(ctx, ret_val);
+    JS_FreeValue(ctx, ret_val);
+    JS_FreeValue(ctx, global_obj);
 
     if (!result->json_result) {
         strncpy(result->error_msg, "Failed to convert result to JSON", 

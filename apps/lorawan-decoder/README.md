@@ -7,7 +7,7 @@ A production-grade LoRaWAN decoder service written in C, designed for industrial
 This service:
 - Listens to LoRaWAN MQTT traffic (`lora/+/+/+/up` and `lora/+/+/+/down`)
 - Dynamically loads JavaScript decoders based on device mapping
-- Decodes payloads using the Duktape JavaScript engine
+- Decodes payloads using the QuickJS JavaScript engine
 - Enriches original frames with decoded data
 - Republishes enriched frames to `scada/lorawan/{deveui}/up|down`
 
@@ -17,10 +17,10 @@ Install the required development libraries:
 
 ```bash
 # Ubuntu/Debian
-sudo apt-get install libmosquitto-dev libjson-c-dev duktape-dev
+sudo apt-get install libmosquitto-dev libjson-c-dev libquickjs
 
 # Fedora/RHEL
-sudo dnf install mosquitto-devel json-c-devel duktape-devel
+sudo dnf install mosquitto-devel json-c-devel quickjs-devel
 ```
 
 ## Building
@@ -280,9 +280,9 @@ If the decoder fails, an error field is added:
 │  config.c/h          - Configuration management                │
 │  logging.c/h         - Logging utilities                       │
 │  mqtt_handler.c/h    - MQTT subscribe/publish (libmosquitto)   │
-│  sensor_map.c/h      - Sensor mapping lookup (cJSON)           │
+│  sensor_map.c/h      - Sensor mapping lookup (json-c)          │
 │  decoder_cache.c/h   - Decoder caching and management          │
-│  js_engine.c/h       - JavaScript engine abstraction (Duktape) │
+│  js_engine.c/h       - JavaScript engine abstraction (QuickJS) │
 │  frame_processor.c/h - Frame enrichment and processing         │
 └─────────────────────────────────────────────────────────────────┘
 ```

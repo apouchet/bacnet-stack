@@ -3,13 +3,13 @@
 # This application is a production-grade LoRaWAN decoder service that:
 # - Listens to LoRaWAN MQTT traffic
 # - Dynamically loads JavaScript decoders based on device mapping
-# - Decodes payloads using Duktape JavaScript engine
+# - Decodes payloads using QuickJS JavaScript engine
 # - Enriches frames and republishes them
 #
 # Dependencies:
 #   - libmosquitto-dev (MQTT client library)
 #   - libjson-c-dev (JSON parsing/serialization)
-#   - duktape-dev (JavaScript engine)
+#   - libquickjs (JavaScript engine)
 #
 # Build with: make lorawan-decoder
 # Or from this directory: make
@@ -35,7 +35,7 @@ OBJS += ${SRC:.c=.o}
 # Additional libraries
 MQTT_LIB = -lmosquitto
 JSON_LIB = -ljson-c
-JS_LIB = -lduktape
+JS_LIB = -L/usr/lib/quickjs -lquickjs -lm
 PTHREAD_LIB = -lpthread
 
 # Add extra libraries to linker flags

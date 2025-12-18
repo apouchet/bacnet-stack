@@ -5,7 +5,7 @@
  * @date 2024
  * @copyright SPDX-License-Identifier: MIT
  *
- * This module provides an abstraction layer over the Duktape JavaScript engine
+ * This module provides an abstraction layer over the QuickJS JavaScript engine
  * for executing decoder scripts safely.
  */
 #ifndef LORAWAN_DECODER_JS_ENGINE_H
