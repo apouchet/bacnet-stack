@@ -30,7 +30,7 @@ static frame_stats_t g_stats = {0};
 /**
  * @brief Extract direction from topic
  *
- * Topic format: lora/+/+/+/up or lora/+/+/+/down
+ * Topic format: application/{application_id}/device/{dev_eui}/event/up or down
  */
 frame_direction_t frame_processor_get_direction(const char *topic)
 {

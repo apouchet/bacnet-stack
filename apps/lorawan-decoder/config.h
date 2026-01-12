@@ -23,9 +23,9 @@
 #define MQTT_DEFAULT_KEEPALIVE 60
 #define MQTT_DEFAULT_QOS 0
 
-/* MQTT subscribe topics */
-#define MQTT_TOPIC_UPLINK "lora/+/+/+/up"
-#define MQTT_TOPIC_DOWNLINK "lora/+/+/+/down"
+/* MQTT subscribe topics (ChirpStack v4 format) */
+#define MQTT_TOPIC_UPLINK "application/+/device/+/event/up"
+#define MQTT_TOPIC_DOWNLINK "application/+/device/+/event/down"
 
 /* MQTT publish topic base */
 #define MQTT_TOPIC_PUBLISH_BASE "scada/lorawan"

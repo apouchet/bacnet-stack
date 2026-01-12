@@ -5,7 +5,7 @@ A production-grade LoRaWAN decoder service written in C, designed for industrial
 ## Overview
 
 This service:
-- Listens to LoRaWAN MQTT traffic (`lora/+/+/+/up` and `lora/+/+/+/down`)
+- Listens to LoRaWAN MQTT traffic (ChirpStack v4 format: `application/+/device/+/event/up` and `application/+/device/+/event/down`)
 - Dynamically loads JavaScript decoders based on device mapping
 - Decodes payloads using the QuickJS JavaScript engine
 - Enriches original frames with decoded data

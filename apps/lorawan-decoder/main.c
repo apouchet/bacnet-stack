@@ -7,7 +7,7 @@
  *
  * This is the main entry point for the LoRaWAN MQTT Decoder Service.
  * The service:
- * - Listens to LoRaWAN MQTT traffic (lora/+/+/+/up and lora/+/+/+/down)
+ * - Listens to LoRaWAN MQTT traffic (application/+/device/+/event/up and down)
  * - Dynamically loads JavaScript decoders based on device mapping
  * - Decodes payloads and enriches original frames
  * - Republishes enriched frames to scada/lorawan/{deveui}/up|down
