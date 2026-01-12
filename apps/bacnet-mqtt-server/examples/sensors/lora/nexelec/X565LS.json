@@ -1,0 +1,25 @@
+{
+  "description": "X565LS - SIGN - Multi-sensor",
+  "properties": {
+    "temperature": {
+      "type": "float",
+      "units": "degrees-celsius"
+    },
+    "humidity": {
+      "type": "float",
+      "units": "percent-relative-humidity"
+    },
+    "co2": {
+      "type": "uint8",
+      "units": "parts-per-million"
+    },
+    "voc": {
+      "type": "uint8",
+      "units": "parts-per-billion"
+    },
+    "pressure": {
+      "type": "float",
+      "units": "hectopascals"
+    }
+  }
+}

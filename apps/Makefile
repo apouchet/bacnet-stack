@@ -264,6 +264,11 @@ SUBDIRS = lib readprop writeprop readfile writefile reinit server dcc \
 	who-am-i you-are apdu writegroup \
 	delete-object server-discover server-basic server-mini
 
+# bacnet-mqtt-server is only available on Linux
+ifeq (${BACNET_PORT},linux)
+SUBDIRS += bacnet-mqtt-server
+endif
+
 ifneq (,$(filter $(BACDL),bip all))
 SUBDIRS += whoisrouter iamrouter initrouter whatisnetnum netnumis
 ifneq (${BBMD},none)
@@ -542,4 +547,8 @@ sc-hub: $(BACNET_LIB_TARGET)
 
 .PHONY: gtk-discover
 gtk-discover: $(BACNET_LIB_TARGET)
+	$(MAKE) -B -C $@
+
+.PHONY: bacnet-mqtt-server
+bacnet-mqtt-server: $(BACNET_LIB_TARGET)
 	$(MAKE) -B -C $@
